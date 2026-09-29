@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  docker2compose:
+    build: .
+    image: docker2compose:v3.2
+    container_name: docker2compose
+    ports:
+      - "5055:5000"  # 外部端口改为 5055，避开群晖 DSM 默认占用的 5000 端口
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config:/app/config
+      - ./compose:/app/compose
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Shanghai
+      - CRON=once
+      - NETWORK=true
+      - SHOW_HEALTHCHECK=true
+      - SHOW_CAP_ADD=true
+      - SHOW_COMMAND=true
+      - SHOW_ENTRYPOINT=true
+      - ENV_FILTER_KEYWORDS=""
+    restart: unless-stopped

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="circleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1d4ed8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 外圆背景 -->
+  <circle cx="32" cy="32" r="30" fill="url(#circleGradient)" stroke="#e5e7eb" stroke-width="2" />
+  
+  <!-- Docker容器组 -->
+  <g transform="translate(12, 20)">
+    <!-- 第一行容器 -->
+    <rect x="0" y="6" width="5" height="3" fill="#ffffff" rx="0.5" />
+    <rect x="6" y="6" width="5" height="3" fill="#ffffff" rx="0.5" />
+    <rect x="12" y="6" width="5" height="3" fill="#ffffff" rx="0.5" />
+    
+    <!-- 第二行容器 -->
+    <rect x="3" y="10" width="5" height="3" fill="#ffffff" rx="0.5" />
+    <rect x="9" y="10" width="5" height="3" fill="#ffffff" rx="0.5" />
+    
+    <!-- 顶部容器 -->
+    <rect x="6" y="2" width="5" height="3" fill="#ffffff" rx="0.5" />
+  </g>
+  
+  <!-- 转换箭头 -->
+  <g transform="translate(32, 28)">
+    <path d="M-6 4 L6 4 M3 1 L6 4 L3 7" stroke="url(#arrowGradient)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  
+  <!-- Compose文件图标 -->
+  <g transform="translate(42, 22)">
+    <rect x="0" y="0" width="10" height="12" fill="#ffffff" rx="1" />
+    <rect x="0.5" y="0.5" width="9" height="11" fill="#1f2937" rx="0.5" />
+    
+    <!-- YAML内容 -->
+    <line x1="1.5" y1="2.5" x2="8" y2="2.5" stroke="#10b981" stroke-width="0.5" />
+    <line x1="2" y1="4" x2="7" y2="4" stroke="#3b82f6" stroke-width="0.4" />
+    <line x1="2" y1="5.5" x2="8" y2="5.5" stroke="#3b82f6" stroke-width="0.4" />
+    <line x1="1.5" y1="7" x2="6.5" y2="7" stroke="#10b981" stroke-width="0.5" />
+    <line x1="2" y1="8.5" x2="7" y2="8.5" stroke="#3b82f6" stroke-width="0.4" />
+    <line x1="1.5" y1="10" x2="5.5" y2="10" stroke="#10b981" stroke-width="0.5" />
+  </g>
+  
+  <!-- 装饰性小点 -->
+  <circle cx="20" cy="50" r="1" fill="#60a5fa" opacity="0.7" />
+  <circle cx="44" cy="14" r="0.8" fill="#34d399" opacity="0.8" />
+  <circle cx="50" cy="50" r="1.2" fill="#f59e0b" opacity="0.6" />
+</svg>
