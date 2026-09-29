@@ -605,7 +605,7 @@ def start_scheduler():
         if config.cron == 'once':
             return jsonify({
                 'success': False,
-                'error': 'CRON 设置为 once，无法启动定时任务'
+                'error': 'CRON 设置为 once，无法开启启动任务'
             }), 400
         
         # 使用调度器服务（后台启动，不阻塞）

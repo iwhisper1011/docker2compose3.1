@@ -35,7 +35,11 @@ class D2CLogger:
             
         self.name = name
         self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            self.log_dir = Path('./logs')
+            self.log_dir.mkdir(parents=True, exist_ok=True)
         self.level = level
         self.max_bytes = max_bytes
         self.backup_count = backup_count

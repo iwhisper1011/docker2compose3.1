@@ -184,7 +184,10 @@ class D2CWebUI {
      * 初始化应用
      */
     async init() {
-        // 首先检查登录状态
+        // 首先初始化主题 (深色/浅色)
+        this.initTheme();
+
+        // 检查登录状态
         const isLoggedIn = await this.checkAuth();
         
         if (!isLoggedIn) {
@@ -194,6 +197,8 @@ class D2CWebUI {
         
         this.showApp();
         this.bindEvents();
+        this.initDraggableDock();
+        this.initUserDropdown();
         this.loadContainers();
         this.loadFileList();
         
@@ -367,9 +372,21 @@ class D2CWebUI {
             this.hideNotification();
         });
 
-        // YAML 编辑器变化监听
-        document.getElementById('yamlEditor')?.addEventListener('input', () => {
+        // YAML 编辑器变化监听与快捷键
+        const yamlEditor = document.getElementById('yamlEditor');
+        yamlEditor?.addEventListener('input', () => {
             this.updateSaveButtonState();
+        });
+        yamlEditor?.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = yamlEditor.selectionStart;
+                const end = yamlEditor.selectionEnd;
+                // 插入 2 个空格缩进
+                yamlEditor.value = yamlEditor.value.substring(0, start) + '  ' + yamlEditor.value.substring(end);
+                yamlEditor.selectionStart = yamlEditor.selectionEnd = start + 2;
+                this.updateSaveButtonState();
+            }
         });
         
         // 全部展开/收缩按钮
@@ -573,8 +590,8 @@ class D2CWebUI {
             const stoppedCount = displayContainers.length - runningCount;
             const groupStatus = runningCount > 0 ? 'running' : 'stopped';
             const statusIcon = groupStatus === 'running' ? 
-                '<span class="group-status-icon running">R</span>' : 
-                '<span class="group-status-icon stopped">S</span>';
+                '<span class="group-status-icon running" title="有运行中的容器"><i class="fas fa-play" style="font-size: 6px;"></i></span>' : 
+                '<span class="group-status-icon stopped" title="容器已停止"><i class="fas fa-stop" style="font-size: 6px;"></i></span>';
             
             // 搜索时自动展开
             const isExpanded = searchTerm || index === 0;
@@ -585,7 +602,7 @@ class D2CWebUI {
                     <div class="group-title">
                         ${statusIcon}
                         <span class="group-badge">${displayContainers.length}</span>
-                        <i class="fas ${group.type === 'single' ? 'fa-cube' : 'fa-cubes'}"></i>
+                        <i class="fas ${group.type === 'single' ? 'fa-cube text-primary' : 'fa-network-wired text-primary'}"></i>
                         <span>${this.highlightMatch(this.escapeHtml(group.name), searchTerm)}</span>
                     </div>
                     <div class="group-actions">
@@ -594,22 +611,18 @@ class D2CWebUI {
                 </div>
                 <div class="group-containers" style="display: ${isExpanded ? 'block' : 'none'}">
                     ${displayContainers.map((container, containerIndex) => {
-                        const statusClass = container.status === 'running' ? 'running' : 'stopped';
-                        const statusIcon = container.status === 'running' ? 
-                            '<span class="container-status-badge running">R</span>' : 
-                            '<span class="container-status-badge stopped">S</span>';
-                        
+                        const isRunning = container.status === 'running';
                         return `
                         <div class="container-item ${index === 0 && containerIndex === 0 ? 'focused' : ''}" data-id="${this.escapeHtml(container.id)}" onclick="app.toggleContainer('${this.escapeHtml(container.id)}')">
                             <div class="container-checkbox ${this.selectedContainers.has(container.id) ? 'checked' : ''}"></div>
                             <div class="container-info">
                                 <div class="container-name-row">
-                                    <i class="fas fa-box container-icon" style="color: #3498db;"></i>
+                                    <i class="fab fa-docker container-icon" style="color: ${isRunning ? '#0284c7' : '#94a3b8'};"></i>
                                     <span class="container-name" title="${this.escapeHtml(container.name)}">${this.highlightMatch(this.escapeHtml(container.name), searchTerm)}</span>
                                     <span class="container-status ${container.status.toLowerCase()}">${container.status}</span>
                                 </div>
                                 <div class="container-details-row">
-                                    <span title="${this.escapeHtml(container.image)}"><i class="fas fa-layer-group"></i> ${container.image.split('/').pop()?.substring(0, 15) || this.escapeHtml(container.image)}</span>
+                                    <span title="${this.escapeHtml(container.image)}"><i class="fas fa-layer-group"></i> ${container.image.split('/').pop()?.substring(0, 18) || this.escapeHtml(container.image)}</span>
                                     <span title="${this.escapeHtml(container.network_mode)}"><i class="fas fa-network-wired"></i> ${this.escapeHtml(container.network_mode)}</span>
                                 </div>
                             </div>
@@ -819,7 +832,7 @@ class D2CWebUI {
                                 <div class="file-name">${highlightedName}</div>
                                 <div class="file-date">${modifiedDate} · ${fileSize}</div>
                             </div>
-                            <button class="btn btn-sm btn-danger delete-btn" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(file.path)}', event)">
+                            <button class="delete-btn" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(file.path)}', event)" title="删除备份文件">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -850,10 +863,10 @@ class D2CWebUI {
                 html += '<div class="folder-header" onclick="app.toggleFolder(this)">';
                 html += `<span><i class="fas fa-folder folder-icon"></i> ${this.highlightMatch(folder.name, searchTerm)}</span>`;
                 html += '<div class="folder-actions">';
-                html += `<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(folder.path)}', event)" title="删除">`;
+                html += `<button class="delete-btn" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(folder.path)}', event)" title="删除整个备份文件夹">`;
                 html += '<i class="fas fa-trash"></i>';
                 html += '</button>';
-                html += `<i class="fas fa-chevron-down toggle-icon" style="${rotate}"></i>`;
+                html += `<i class="fas fa-chevron-down toggle-icon" style="${rotate}" title="展开/折叠"></i>`;
                 html += '</div>';
                 html += '</div>';
                 html += `<div class="folder-content ${isExpanded ? 'expanded' : 'collapsed'}" style="${maxHeight}">`;
@@ -870,7 +883,7 @@ class D2CWebUI {
                                 <div class="file-name">${highlightedName}</div>
                                 <div class="file-date">${modifiedDate} · ${fileSize}</div>
                             </div>
-                            <button class="btn btn-sm btn-danger delete-btn" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(file.path)}', event)">
+                            <button class="delete-btn" onclick="event.stopPropagation(); app.deleteFile('${this.escapeHtml(file.path)}', event)" title="删除备份文件">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -927,9 +940,17 @@ class D2CWebUI {
     }
 
     async deleteFile(filePath, event) {
-        event.stopPropagation();
+        if (event) {
+            event.stopPropagation();
+        }
         
-        if (!confirm('确定要删除这个文件吗？')) {
+        const isFolder = !filePath.endsWith('.yaml') && !filePath.endsWith('.yml');
+        const itemName = filePath.split('/').filter(Boolean).pop() || filePath;
+        const confirmMsg = isFolder
+            ? `确定要删除备份文件夹 "${itemName}" 及其中的所有备份文件吗？此操作不可恢复。`
+            : `确定要删除备份文件 "${itemName}" 吗？此操作不可恢复。`;
+            
+        if (!confirm(confirmMsg)) {
             return;
         }
         
@@ -1166,10 +1187,10 @@ class D2CWebUI {
             this.showLoading(true);
             await API.post('/api/scheduler/start');
             
-            this.showNotification('定时任务启动成功', 'success');
+            this.showNotification('启动任务已开启', 'success');
             this.refreshSchedulerStatus();
         } catch (error) {
-            console.error('启动定时任务失败:', error);
+            console.error('启动任务失败:', error);
             this.showNotification(`启动失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -1181,10 +1202,10 @@ class D2CWebUI {
             this.showLoading(true);
             await API.post('/api/scheduler/stop');
             
-            this.showNotification('定时任务停止成功', 'success');
+            this.showNotification('启动任务已停止', 'success');
             this.refreshSchedulerStatus();
         } catch (error) {
-            console.error('停止定时任务失败:', error);
+            console.error('停止启动任务失败:', error);
             this.showNotification(`停止失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -1354,6 +1375,189 @@ class D2CWebUI {
             document.body.removeChild(textArea);
             this.showNotification('已复制到剪贴板', 'success');
         }
+    }
+
+    // ==================== 主题管理 (黑夜/白天模式) ====================
+    initTheme() {
+        const savedTheme = localStorage.getItem('d2c_theme') || 'dark';
+        this.setTheme(savedTheme);
+
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                this.setTheme(newTheme);
+            });
+        }
+    }
+
+    setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('d2c_theme', theme);
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        if (themeToggleBtn) {
+            themeToggleBtn.title = theme === 'dark' ? '切换为白天模式' : '切换为黑夜模式';
+        }
+    }
+
+    // ==================== 自由拖拽功能坞 (Draggable Command Dock) ====================
+    initDraggableDock() {
+        const dock = document.getElementById('commandDock');
+        const handle = document.getElementById('dockDragHandle') || dock;
+        if (!dock || !handle) return;
+
+        let isDragging = false;
+        let anchorOffsetX = 0;
+        let anchorOffsetY = 0;
+
+        // 加载历史位置
+        const savedPos = localStorage.getItem('d2c_dock_pos');
+        if (savedPos) {
+            try {
+                const { x, y } = JSON.parse(savedPos);
+                const maxLeft = window.innerWidth - dock.offsetWidth - 10;
+                const maxTop = window.innerHeight - dock.offsetHeight - 10;
+                const safeX = Math.max(10, Math.min(x, maxLeft));
+                const safeY = Math.max(10, Math.min(y, maxTop));
+                
+                dock.classList.add('is-positioned');
+                dock.style.animation = 'none';
+                dock.style.transform = 'none';
+                dock.style.bottom = 'auto';
+                dock.style.left = `${safeX}px`;
+                dock.style.top = `${safeY}px`;
+            } catch (e) {
+                console.warn('解析历史拖拽位置失败:', e);
+            }
+        }
+
+        const onPointerDown = (e) => {
+            // 如果点击的是内部按钮本身，不触发拖拽
+            if (e.target.closest('button')) return;
+            e.preventDefault();
+
+            isDragging = true;
+
+            const dockRect = dock.getBoundingClientRect();
+            const handleRect = handle.getBoundingClientRect();
+
+            // 以扩展坞移动图标(handle)为中心锚点移动，消除向中跳跃
+            // 锚点偏移量取移动图标中心相对于 dock 左上角的相对坐标
+            anchorOffsetX = (handleRect.left + handleRect.width / 2) - dockRect.left;
+            anchorOffsetY = (handleRect.top + handleRect.height / 2) - dockRect.top;
+
+            dock.classList.add('is-positioned', 'is-dragging');
+            dock.style.animation = 'none';
+            dock.style.transform = 'none';
+            dock.style.bottom = 'auto';
+
+            let newLeft = e.clientX - anchorOffsetX;
+            let newTop = e.clientY - anchorOffsetY;
+
+            // 屏幕边界限制
+            const maxLeft = window.innerWidth - dock.offsetWidth - 10;
+            const maxTop = window.innerHeight - dock.offsetHeight - 10;
+            newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+            newTop = Math.max(10, Math.min(newTop, maxTop));
+
+            dock.style.left = `${newLeft}px`;
+            dock.style.top = `${newTop}px`;
+
+            try {
+                handle.setPointerCapture(e.pointerId);
+            } catch (err) {}
+
+            document.addEventListener('pointermove', onPointerMove);
+            document.addEventListener('pointerup', onPointerUp);
+            document.addEventListener('pointercancel', onPointerUp);
+        };
+
+        const onPointerMove = (e) => {
+            if (!isDragging) return;
+
+            let newLeft = e.clientX - anchorOffsetX;
+            let newTop = e.clientY - anchorOffsetY;
+
+            // 屏幕边界限制
+            const maxLeft = window.innerWidth - dock.offsetWidth - 10;
+            const maxTop = window.innerHeight - dock.offsetHeight - 10;
+            newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+            newTop = Math.max(10, Math.min(newTop, maxTop));
+
+            dock.style.left = `${newLeft}px`;
+            dock.style.top = `${newTop}px`;
+        };
+
+        const onPointerUp = (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+            dock.classList.remove('is-dragging');
+            dock.classList.add('is-positioned');
+
+            if (e && e.pointerId) {
+                try {
+                    handle.releasePointerCapture(e.pointerId);
+                } catch (err) {}
+            }
+
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+            document.removeEventListener('pointercancel', onPointerUp);
+
+            const rect = dock.getBoundingClientRect();
+            localStorage.setItem('d2c_dock_pos', JSON.stringify({ x: rect.left, y: rect.top }));
+        };
+
+        handle.addEventListener('pointerdown', onPointerDown);
+
+        // 双击手柄一键复位到正下方
+        handle.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            dock.classList.remove('is-positioned', 'is-dragging');
+            dock.style.animation = '';
+            dock.style.transform = '';
+            dock.style.bottom = '';
+            dock.style.left = '';
+            dock.style.top = '';
+            localStorage.removeItem('d2c_dock_pos');
+            this.showNotification('功能坞已复位至正下方', 'info');
+        });
+    }
+
+    // ==================== Admin 用户悬浮下拉菜单 ====================
+    initUserDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        const pill = document.getElementById('userPill');
+        const menu = document.getElementById('userDropdownMenu');
+        if (!dropdown || !pill || !menu) return;
+
+        let closeTimeout = null;
+
+        dropdown.addEventListener('mouseenter', () => {
+            if (closeTimeout) {
+                clearTimeout(closeTimeout);
+                closeTimeout = null;
+            }
+            dropdown.classList.add('is-open');
+        });
+
+        dropdown.addEventListener('mouseleave', () => {
+            closeTimeout = setTimeout(() => {
+                dropdown.classList.remove('is-open');
+            }, 250);
+        });
+
+        pill.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('is-open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('is-open');
+            }
+        });
     }
 }
 

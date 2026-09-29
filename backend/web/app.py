@@ -21,14 +21,15 @@ logger = get_logger()
 def load_or_create_secret_key() -> str:
     """加载或创建固定的 SECRET_KEY"""
     key_file = Path('/app/config/.secret_key')
-    if key_file.exists():
-        return key_file.read_text().strip()
-    
-    # 创建新的 key
-    key = secrets.token_hex(32)
-    key_file.parent.mkdir(parents=True, exist_ok=True)
-    key_file.write_text(key)
-    return key
+    try:
+        if key_file.exists():
+            return key_file.read_text().strip()
+        key = secrets.token_hex(32)
+        key_file.parent.mkdir(parents=True, exist_ok=True)
+        key_file.write_text(key)
+        return key
+    except OSError:
+        return secrets.token_hex(32)
 
 
 def create_app(config_path: str = '/app/config/config.json') -> Flask:

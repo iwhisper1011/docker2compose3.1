@@ -3,156 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D2C Web UI - Docker to Compose</title>
+    <title>Docker2Compose v3.2 - Cloud & NAS Compose Generator</title>
     <link rel="icon" href="{{ url_for('static', filename='images/logo-icon.svg') }}" type="image/svg+xml">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts & FontAwesome (UI/UX Pro Max Typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 手绘风格 CSS -->
-    <link href="{{ url_for('static', filename='css/handdrawn.css') }}" rel="stylesheet">
+    
+    <!-- 现代化 DevOps 风格 CSS -->
+    <link href="{{ url_for('static', filename='css/modern.css') }}" rel="stylesheet">
 </head>
 <body>
-    <!-- 登录遮罩 -->
+    <!-- 现代化登录遮罩 -->
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
-            <h2>🐳 D2C Login</h2>
+            <div class="login-logo">
+                <i class="fab fa-docker"></i>
+            </div>
+            <h2>Docker2Compose</h2>
+            <p class="login-subtitle">自动化容器分组与 Compose 配置生成控制台</p>
             <form id="loginForm">
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="loginUsername" placeholder="用户名" required>
+                <div class="mb-3 text-start">
+                    <label class="form-label" for="loginUsername">用户名</label>
+                    <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名" required autocomplete="username">
                 </div>
-                <div class="mb-3">
-                    <input type="password" class="form-control" id="loginPassword" placeholder="密码" required>
+                <div class="mb-3 text-start">
+                    <label class="form-label" for="loginPassword">密码</label>
+                    <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn btn-primary w-100">登录</button>
+                <button type="submit" class="btn btn-modern btn-modern-primary w-100 py-2 justify-content-center">
+                    <i class="fas fa-sign-in-alt"></i> 登录控制台
+                </button>
             </form>
             <div class="login-hint mt-3">
-                <small>默认账户: admin / admin123</small>
+                <small><i class="fas fa-info-circle me-1 text-primary"></i> 默认账户: <code>admin</code> / <code>admin123</code></small>
             </div>
         </div>
     </div>
 
+    <!-- 主应用容器 -->
     <div class="app-container" id="appContainer" style="display: none;">
-        <!-- 顶部导航栏 -->
+        <!-- 现代化顶部状态与品牌监测栏 -->
         <header class="header">
             <div class="header-content">
                 <div class="header-left">
-                    <button class="btn btn-sm" id="aboutMeBtn" title="关于我">
-                        <i class="fas fa-info-circle"></i>
-                        关于
-                    </button>
-                </div>
-                <div class="header-center">
-                    <div class="logo">
-                        <span>🐳 D2C Web UI</span>
+                    <div class="header-brand" id="brandHeader">
+                        <div class="brand-icon">
+                            <i class="fab fa-docker"></i>
+                        </div>
+                        <span class="brand-title">Docker2Compose</span>
+                        <span class="brand-badge">v3.2</span>
+                    </div>
+                    <div class="header-status-badge ms-3 d-none d-sm-inline-flex align-items-center">
+                        <span class="status-pulse-dot"></span>
+                        <span class="status-badge-text">Docker 守护进程在线</span>
                     </div>
                 </div>
+
                 <div class="header-actions">
-                    <button class="btn btn-warning" id="schedulerStatusBtn">
-                        <i class="fas fa-clock"></i>
-                        定时任务
+                    <button class="btn-theme-toggle me-2" id="themeToggleBtn" title="切换黑夜 / 白天模式" aria-label="切换黑夜白天模式">
+                        <i class="fas fa-sun theme-icon-sun"></i>
+                        <i class="fas fa-moon theme-icon-moon"></i>
                     </button>
-                    <button class="btn btn-secondary" id="settingsBtn">
-                        <i class="fas fa-cog"></i>
-                        设置
-                    </button>
-                    <button class="btn btn-primary" id="refreshBtn">
-                        <i class="fas fa-sync-alt"></i>
-                        刷新
-                    </button>
-                    <button class="btn btn-success" id="generateAllBtn">
-                        <i class="fas fa-file-code"></i>
-                        全量备份
-                    </button>
-                    <button class="btn btn-warning" id="changePasswordBtn" title="修改密码">
-                        <i class="fas fa-key"></i>
-                        <span>修改密码</span>
-                    </button>
-                    <button class="btn btn-outline-danger" id="logoutBtn" title="退出登录">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-pill" id="userPill" role="button" aria-haspopup="true" aria-expanded="false" title="管理员账户操作">
+                            <i class="fas fa-user-shield text-info"></i>
+                            <span id="currentUsername" class="fw-semibold">admin</span>
+                            <i class="fas fa-chevron-down user-arrow ms-1"></i>
+                        </div>
+                        <div class="user-dropdown-menu" id="userDropdownMenu">
+                            <div class="user-menu-header">
+                                <span class="user-menu-label">当前账户</span>
+                                <span class="user-menu-name">Administrator</span>
+                            </div>
+                            <div class="user-menu-divider"></div>
+                            <button type="button" class="user-menu-item" id="aboutMeBtn" title="关于系统架构与版本">
+                                <i class="fas fa-info-circle text-info"></i>
+                                <span>关于系统</span>
+                            </button>
+                            <button type="button" class="user-menu-item" id="changePasswordBtn" title="修改用户密码">
+                                <i class="fas fa-key text-warning"></i>
+                                <span>修改密码</span>
+                            </button>
+                            <div class="user-menu-divider"></div>
+                            <button type="button" class="user-menu-item text-danger" id="logoutBtn" title="安全退出系统">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>安全退出</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <!-- 主要内容区域 -->
+        <!-- 三栏工作台主体 -->
         <main class="main-content">
-            <!-- 左侧容器列表 -->
+            <!-- 左侧：容器列表 -->
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <div class="header-left">
-                        <h3>
-                            <i class="fas fa-cubes"></i>
-                            容器列表
-                        </h3>
-                        <div class="selection-info">
-                            已选择: <span id="selectedCount">0</span> 个
-                        </div>
-                    </div>
-                    <div class="header-right">
+                    <h3>
+                        <i class="fas fa-cubes"></i>
+                        <span>容器列表</span>
+                    </h3>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="selection-info">
+                            已选: <span id="selectedCount">0</span>
+                        </span>
                         <div class="expand-controls">
-                            <button class="btn btn-sm" id="expandAllBtn" title="展开">
+                            <button class="btn-icon" id="expandAllBtn" title="展开全部">
                                 <i class="fas fa-expand-alt"></i>
                             </button>
-                            <button class="btn btn-sm" id="collapseAllBtn" title="收缩">
+                            <button class="btn-icon" id="collapseAllBtn" title="收起全部">
                                 <i class="fas fa-compress-alt"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-                <div class="search-box px-3 py-2">
+
+                <div class="search-box">
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control form-control-sm" id="containerSearchInput" placeholder="搜索容器...">
+                        <input type="text" class="form-control" id="containerSearchInput" placeholder="按名称模糊过滤容器...">
                     </div>
                 </div>
+
                 <div class="container-groups" id="containerGroups">
                     <div class="loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <div>加载中...</div>
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <div>正在扫描容器...</div>
                     </div>
                 </div>
             </aside>
 
-            <!-- 中间文件列表 -->
+            <!-- 中间：备份记录与文件列表 -->
             <aside class="file-list-sidebar">
                 <div class="sidebar-header">
                     <h3>
-                        <i class="fas fa-folder-open"></i>
-                        备份记录
+                        <i class="fas fa-history"></i>
+                        <span>备份记录</span>
                     </h3>
-                </div>
-                <div class="search-box px-3 py-2">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control form-control-sm" id="fileSearchInput" placeholder="搜索文件...">
+                    <div class="expand-controls">
+                        <button class="btn-icon" id="refreshFilesBtn" title="刷新文件列表">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </div>
+
+                <div class="search-box">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="fileSearchInput" placeholder="搜索备份文件...">
+                    </div>
+                </div>
+
                 <div class="file-list" id="fileList">
                     <div class="loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <div>加载中...</div>
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <div>正在加载历史文件...</div>
                     </div>
                 </div>
             </aside>
 
-            <!-- 右侧编辑器区域 -->
+            <!-- 右侧：Compose 配置编辑器 -->
             <section class="editor-section">
                 <div class="editor-header">
                     <div class="editor-title">
                         <h3>
-                            <i class="fas fa-file-code"></i>
-                            Compose 配置
+                            <i class="fas fa-code"></i>
+                            <span>Compose 配置工作区</span>
                         </h3>
                     </div>
                     <div class="editor-actions">
-                        <input type="text" class="filename-input" id="filenameInput" placeholder="文件名..." value="compose.yaml">
-                        <button class="btn btn-primary" id="generateComposeBtn">
-                            <i class="fas fa-magic"></i> 合并
+                        <input type="text" class="filename-input" id="filenameInput" placeholder="文件名..." value="compose.yaml" title="当前保存文件名">
+                        <button class="btn-modern btn-modern-primary" id="generateComposeBtn" title="将左侧勾选容器生成合并配置">
+                            <i class="fas fa-layer-group"></i> <span>合并生成</span>
                         </button>
-                        <button class="btn btn-success" id="saveBtn">
-                            <i class="fas fa-save"></i> 保存
+                        <button class="btn-modern btn-modern-success" id="saveBtn" title="保存文件到备份目录">
+                            <i class="fas fa-save"></i> <span>保存文件</span>
                         </button>
-                        <button class="btn btn-secondary" id="copyBtn">
-                            <i class="fas fa-copy"></i> 复制
+                        <button class="btn-modern btn-modern-secondary" id="copyBtn" title="复制内容到剪贴板">
+                            <i class="fas fa-copy"></i> <span>复制</span>
                         </button>
                     </div>
                 </div>
@@ -160,159 +195,209 @@
                 <div class="editor-container">
                     <div class="editor-placeholder" id="editorPlaceholder">
                         <div class="placeholder-content">
-                            <i class="fas fa-hand-point-left"></i>
-                            <h4>选择容器生成 Compose</h4>
-                            <p>从左侧选择容器，点击"合并"生成配置</p>
+                            <i class="fab fa-docker"></i>
+                            <h4>尚未加载 Compose 配置</h4>
+                            <p>请在左侧勾选容器并点击「合并生成」，或在中间历史记录中点击文件载入编辑。</p>
                         </div>
                     </div>
-                    <textarea id="yamlEditor" class="yaml-editor" placeholder="Compose 内容..."></textarea>
+                    <textarea id="yamlEditor" class="yaml-editor" spellcheck="false" placeholder="在此编辑或直接粘贴 docker-compose.yaml 内容..."></textarea>
                 </div>
             </section>
         </main>
+
+        <!-- 底部全景浮动指挥坞 (Floating Command Dock HUD - 可自由拖拽) -->
+        <nav class="floating-command-dock" id="commandDock" aria-label="全景操作指挥坞">
+            <div class="dock-inner">
+                <!-- 拖拽把手 (Drag Grip) -->
+                <div class="dock-drag-handle" id="dockDragHandle" title="按住可拖动移动位置，双击复位到中央">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+
+                <!-- 调度与数据流组 (Primary Actions) -->
+                <div class="dock-group">
+                    <button class="btn-dock btn-dock-primary" id="schedulerStatusBtn" title="查看与管理启动任务 (调度中心)">
+                        <span class="dock-status-pulse"></span>
+                        <i class="fas fa-play-circle"></i>
+                        <span>启动任务</span>
+                    </button>
+                    <button class="btn-dock btn-dock-success" id="generateAllBtn" title="全量扫描并导出所有容器配置">
+                        <i class="fas fa-cloud-download-alt"></i>
+                        <span>全量备份</span>
+                    </button>
+                    <button class="btn-dock btn-dock-default" id="refreshBtn" title="刷新容器与备份文件列表">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>刷新</span>
+                    </button>
+                </div>
+
+                <div class="dock-divider"></div>
+
+                <!-- 偏好与系统配置组 -->
+                <div class="dock-group">
+                    <button class="btn-dock btn-dock-default" id="settingsBtn" title="系统偏好设置 (CRON、网络与过滤)">
+                        <i class="fas fa-sliders-h"></i>
+                        <span>设置</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
     </div>
 
-    <!-- 设置弹窗 -->
-    <div class="modal fade" id="settingsModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- 系统设置弹窗 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-cog"></i> 系统设置
+                        <i class="fas fa-sliders-h"></i> <span>系统偏好设置</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
                     <form id="settingsForm">
-                        <div class="mb-3">
-                            <label for="cronInput" class="form-label">自动备份频率</label>
+                        <div class="settings-section">
+                            <div class="settings-section-title">
+                                <i class="fas fa-play-circle text-primary"></i> 启动任务自动执行策略
+                            </div>
                             <select class="form-select" id="cronInput">
-                                <option value="manual">🔧 手动执行</option>
-                                <option value="once">▶️ 仅启动时执行一次</option>
-                                <option value="*/10 * * * *">⏰ 每 10 分钟</option>
-                                <option value="*/30 * * * *">⏰ 每 30 分钟</option>
-                                <option value="0 * * * *">⏰ 每小时</option>
-                                <option value="0 */3 * * *">⏰ 每 3 小时</option>
-                                <option value="0 */6 * * *">⏰ 每 6 小时</option>
-                                <option value="0 2 * * *" selected>🌙 每天凌晨 2 点</option>
-                                <option value="custom">⚙️ 自定义 CRON</option>
+                                <option value="manual">🔧 手动执行（关闭启动任务）</option>
+                                <option value="once">▶️ 仅应用启动时执行一次</option>
+                                <option value="*/10 * * * *">⏰ 每 10 分钟自动备份</option>
+                                <option value="*/30 * * * *">⏰ 每 30 分钟自动备份</option>
+                                <option value="0 * * * *">⏰ 每小时整点备份</option>
+                                <option value="0 */3 * * *">⏰ 每 3 小时执行一次</option>
+                                <option value="0 */6 * * *">⏰ 每 6 小时执行一次</option>
+                                <option value="0 2 * * *" selected>🌙 每天凌晨 2 点执行</option>
+                                <option value="custom">⚙️ 自定义 CRON 表达式</option>
                             </select>
                             <div id="customCronInput" class="mt-2" style="display: none;">
-                                <input type="text" class="form-control" id="customCronValue" placeholder="* * * * *">
-                                <small class="text-muted">格式: 分 时 日 月 周</small>
+                                <input type="text" class="form-control form-control-sm font-monospace" id="customCronValue" placeholder="* * * * *">
+                                <small class="text-muted">标准格式: 分 时 日 月 周 (例如: 30 3 * * *)</small>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Compose配置项显示控制</label>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="networkInput" checked>
-                                <label class="form-check-label" for="networkInput">
-                                    显示网络配置 (network)
-                                </label>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title">
+                                <i class="fas fa-filter text-primary"></i> Compose 配置生成字段过滤
                             </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="healthcheckInput" checked>
-                                <label class="form-check-label" for="healthcheckInput">
-                                    显示健康检查 (healthcheck)
-                                </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="networkInput" checked>
+                                        <label class="form-check-label" for="networkInput">网络配置 (network)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="healthcheckInput" checked>
+                                        <label class="form-check-label" for="healthcheckInput">健康检查 (healthcheck)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="capAddInput" checked>
+                                        <label class="form-check-label" for="capAddInput">特权能力 (cap_add)</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="commandInput" checked>
+                                        <label class="form-check-label" for="commandInput">启动命令 (command)</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="entrypointInput" checked>
+                                        <label class="form-check-label" for="entrypointInput">入口点 (entrypoint)</label>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="capAddInput" checked>
-                                <label class="form-check-label" for="capAddInput">
-                                    显示权限配置 (cap_add)
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="commandInput" checked>
-                                <label class="form-check-label" for="commandInput">
-                                    显示启动命令 (command)
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="entrypointInput" checked>
-                                <label class="form-check-label" for="entrypointInput">
-                                    显示入口点 (entrypoint)
-                                </label>
-                            </div>
-                            <small class="text-muted">取消勾选后，对应配置将不会出现在生成的Compose文件中</small>
+                            <small class="text-muted d-block mt-2">取消勾选后，对应字段将不会写入导出的 YAML 文件中。</small>
                         </div>
-                        <div class="mb-3">
-                            <label for="envFilterInput" class="form-label">环境变量关键词过滤</label>
-                            <input type="text" class="form-control" id="envFilterInput" placeholder="例如: VERSION,YARN,NODE">
-                            <small class="text-muted">输入关键词，用英文逗号分隔。包含这些关键词的环境变量将被过滤掉，不显示在Compose文件中。<br>常见需要过滤的关键词：VERSION, YARN_VERSION, NODE_VERSION, APP_VERSION 等</small>
+
+                        <div class="settings-section">
+                            <div class="settings-section-title">
+                                <i class="fas fa-shield-alt text-primary"></i> 环境变量过滤关键词
+                            </div>
+                            <input type="text" class="form-control" id="envFilterInput" placeholder="如: VERSION,NODE_ENV,YARN">
+                            <small class="text-muted d-block mt-1">使用英文逗号分隔。匹配关键词的环境变量将被自动剔除，精简配置文件。</small>
                         </div>
-                        <div class="mb-3">
-                            <label for="tzInput" class="form-label">时区设置</label>
+
+                        <div class="mb-0">
+                            <label for="tzInput" class="form-label">
+                                <i class="fas fa-globe text-primary me-1"></i> 系统运行时区
+                            </label>
                             <select class="form-select" id="tzInput">
-                                <option value="Asia/Shanghai">Asia/Shanghai (北京)</option>
-                                <option value="UTC">UTC (协调世界时)</option>
-                                <option value="America/New_York">America/New_York (纽约)</option>
-                                <option value="Europe/London">Europe/London (伦敦)</option>
-                                <option value="Asia/Tokyo">Asia/Tokyo (东京)</option>
+                                <option value="Asia/Shanghai">Asia/Shanghai (北京时间, UTC+8)</option>
+                                <option value="UTC">UTC (世界协调时)</option>
+                                <option value="America/New_York">America/New_York (纽约, EST)</option>
+                                <option value="Europe/London">Europe/London (伦敦, GMT)</option>
+                                <option value="Asia/Tokyo">Asia/Tokyo (东京, JST)</option>
                             </select>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveSettingsBtn">
-                        <i class="fas fa-save"></i> 保存并应用
+                    <button type="button" class="btn btn-modern btn-modern-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="saveSettingsBtn">
+                        <i class="fas fa-save me-1"></i> 保存并应用配置
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 任务状态弹窗 -->
-    <div class="modal fade" id="schedulerStatusModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- 启动任务状态与日志弹窗 -->
+    <div class="modal fade" id="schedulerStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-clock"></i> 定时任务状态
+                        <i class="fas fa-play-circle"></i> <span>启动任务管理中心</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- 任务状态信息 -->
-                    <div class="sticky-note blue mb-3">
-                        <div class="row g-3">
+                    <!-- 调度器状态控制卡片 -->
+                    <div class="status-card mb-3">
+                        <div class="row align-items-center g-3">
                             <div class="col-md-5">
-                                <div class="mb-2">
-                                    <span class="fw-bold">当前状态:</span>
-                                    <span id="schedulerCurrentStatus" class="status-indicator">检查中...</span>
+                                <div class="mb-3 d-flex align-items-center justify-content-between">
+                                    <span class="fw-semibold text-secondary">启动任务状态:</span>
+                                    <span id="schedulerCurrentStatus" class="status-indicator">
+                                        检查中...
+                                    </span>
                                 </div>
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-success" id="quickStartBtn">
-                                        <i class="fas fa-play me-2"></i>启动任务
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-sm btn-modern-success flex-fill" id="quickStartBtn">
+                                        <i class="fas fa-play me-1"></i>启动
                                     </button>
-                                    <button class="btn btn-danger" id="quickStopBtn">
-                                        <i class="fas fa-stop me-2"></i>停止任务
+                                    <button class="btn btn-sm btn-dock-danger flex-fill" id="quickStopBtn">
+                                        <i class="fas fa-stop me-1"></i>停止
                                     </button>
-                                    <button class="btn btn-primary" id="quickRunOnceBtn">
-                                        <i class="fas fa-bolt me-2"></i>立即执行
+                                    <button class="btn btn-sm btn-modern-primary flex-fill" id="quickRunOnceBtn">
+                                        <i class="fas fa-bolt me-1"></i>立即备份
                                     </button>
                                 </div>
                             </div>
                             <div class="col-md-7">
                                 <div class="row g-2">
                                     <div class="col-12">
-                                        <div class="bg-white rounded p-2 border border-2 border-dark">
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <span class="fw-bold">当前频率:</span>
-                                                <span id="schedulerCron" class="badge bg-secondary">-</span>
-                                            </div>
+                                        <div class="metric-card d-flex align-items-center justify-content-between py-2">
+                                            <span class="text-secondary small fw-medium">当前调度周期:</span>
+                                            <span id="schedulerCron" class="badge bg-secondary font-monospace">-</span>
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="text-center p-2 bg-info bg-opacity-10 rounded border border-2 border-info">
-                                            <div class="small mb-1">下次执行</div>
-                                            <div id="schedulerNextRun" class="fw-bold text-info">-</div>
+                                        <div class="metric-card">
+                                            <div class="metric-label">下次自动执行</div>
+                                            <div id="schedulerNextRun" class="metric-val text-primary">-</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="text-center p-2 bg-warning bg-opacity-10 rounded border border-2 border-warning">
-                                            <div class="small mb-1">最后执行</div>
-                                            <div id="schedulerLastRun" class="fw-bold text-warning">-</div>
+                                        <div class="metric-card">
+                                            <div class="metric-label">最后执行时间</div>
+                                            <div id="schedulerLastRun" class="metric-val text-warning">-</div>
                                         </div>
                                     </div>
                                 </div>
@@ -320,151 +405,157 @@
                         </div>
                     </div>
                     
-                    <!-- 执行日志 -->
-                    <div class="sticky-note yellow">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">
-                                <i class="fas fa-file-alt"></i> 执行日志
-                            </h6>
-                            <div>
-                                <button class="btn btn-sm btn-secondary" id="refreshLogsBtn">
-                                    <i class="fas fa-sync-alt"></i> 刷新
+                    <!-- 黑色高质感执行日志终端 -->
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <div class="terminal-title">
+                                <i class="fas fa-terminal"></i>
+                                <span>SCHEDULER CONSOLE LOGS</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-xs btn-modern-secondary py-1 px-2 font-monospace" id="refreshLogsBtn" style="font-size: 0.75rem;">
+                                    <i class="fas fa-sync-alt me-1"></i>刷新
                                 </button>
-                                <button class="btn btn-sm btn-danger" id="clearLogsBtn">
-                                    <i class="fas fa-trash"></i> 清空
+                                <button class="btn btn-xs btn-dock-danger py-1 px-2 font-monospace" id="clearLogsBtn" style="font-size: 0.75rem;">
+                                    <i class="fas fa-trash me-1"></i>清空
                                 </button>
                             </div>
                         </div>
                         <div class="log-container" id="logContainer">
                             <div class="log-placeholder">
-                                <i class="fas fa-file-alt"></i>
-                                <p>暂无日志</p>
-                                <small>执行任务后将显示记录</small>
+                                <i class="fas fa-terminal"></i>
+                                <p>暂无日志输出</p>
+                                <small>执行任务后记录将在此实时呈现</small>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" id="autoRefreshToggle">
-                        <i class="fas fa-sync-alt"></i> 自动刷新
+                    <button type="button" class="btn btn-modern btn-modern-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="autoRefreshToggle">
+                        <i class="fas fa-sync-alt me-1"></i> 开启自动刷新
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 关于我弹窗 -->
-    <div class="modal fade" id="aboutMeModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- 关于系统弹窗 -->
+    <div class="modal fade" id="aboutMeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-info-circle"></i> 关于 D2C
+                        <i class="fas fa-info-circle"></i> <span>关于 Docker2Compose</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
                     <div class="text-center mb-4">
-                        <div class="d-flex align-items-center justify-content-center mb-3">
-                            <span class="display-4 fw-bold">🐳 D2C Web UI</span>
+                        <div class="brand-icon mx-auto mb-2" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                            <i class="fab fa-docker"></i>
                         </div>
-                        <span class="badge bg-primary fs-6">v2.0</span>
+                        <h4 class="fw-bold mb-1">Docker2Compose (D2C)</h4>
+                        <span class="badge bg-primary">v3.2 现代化专业版</span>
                     </div>
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <div class="sticky-note green">
-                                <h6>🚀 核心功能</h6>
-                                <ul class="list-unstyled mb-0">
-                                    <li>• 自动扫描 Docker 容器</li>
-                                    <li>• 智能生成 Compose 配置</li>
-                                    <li>• 定时自动备份</li>
-                                    <li>• 批量容器处理</li>
+                            <div class="about-card">
+                                <div class="about-card-title text-primary">
+                                    <i class="fas fa-check-circle me-1"></i> 核心功能
+                                </div>
+                                <ul class="about-card-list">
+                                    <li>• 自动扫描宿主机 Docker 容器</li>
+                                    <li>• 依据网络依赖拓扑自动分组</li>
+                                    <li>• 启动任务与批量 Compose 导出备份</li>
+                                    <li>• 便捷的配置项与环境变量过滤</li>
                                 </ul>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="sticky-note pink">
-                                <h6>💡 使用提示</h6>
-                                <ul class="list-unstyled mb-0">
-                                    <li>• 左侧选择容器</li>
-                                    <li>• 中间查看备份记录</li>
-                                    <li>• 右侧编辑配置文件</li>
-                                    <li>• 设置定时自动备份</li>
+                            <div class="about-card">
+                                <div class="about-card-title text-success">
+                                    <i class="fas fa-lightbulb me-1"></i> 快捷提示
+                                </div>
+                                <ul class="about-card-list">
+                                    <li>• 左侧多选容器后一键合并配置</li>
+                                    <li>• 备份历史支持快速预览与还原</li>
+                                    <li>• 右侧工作台可即时调整并保存</li>
+                                    <li>• 支持自定义 CRON 调度策略</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
 
                     <div class="text-center">
-                        <a href="https://github.com/coracoo/docker2compose" target="_blank" class="btn btn-primary">
-                            <i class="fab fa-github"></i> GitHub 仓库
+                        <a href="https://github.com/coracoo/docker2compose" target="_blank" rel="noopener noreferrer" class="btn btn-modern btn-modern-secondary px-4 py-2">
+                            <i class="fab fa-github me-1"></i> 访问 GitHub 开源仓库
                         </a>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-modern btn-modern-secondary" data-bs-dismiss="modal">关闭</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 修改密码弹窗 -->
-    <div class="modal fade" id="changePasswordModal" tabindex="-1">
-        <div class="modal-dialog">
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="fas fa-key"></i> 修改密码
+                        <i class="fas fa-key"></i> <span>修改管理员密码</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
                     <form id="changePasswordForm">
                         <div class="mb-3">
                             <label for="oldPassword" class="form-label">当前密码</label>
-                            <input type="password" class="form-control" id="oldPassword" required autocomplete="current-password">
+                            <input type="password" class="form-control" id="oldPassword" placeholder="请输入当前密码" required autocomplete="current-password">
                         </div>
                         <div class="mb-3">
                             <label for="newPassword" class="form-label">新密码</label>
-                            <input type="password" class="form-control" id="newPassword" required minlength="6" autocomplete="new-password">
-                            <small class="text-muted">密码长度至少6位</small>
+                            <input type="password" class="form-control" id="newPassword" placeholder="设置新密码（至少 6 位）" required minlength="6" autocomplete="new-password">
                         </div>
                         <div class="mb-3">
                             <label for="confirmPassword" class="form-label">确认新密码</label>
-                            <input type="password" class="form-control" id="confirmPassword" required minlength="6" autocomplete="new-password">
+                            <input type="password" class="form-control" id="confirmPassword" placeholder="再次输入新密码" required minlength="6" autocomplete="new-password">
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="savePasswordBtn">
-                        <i class="fas fa-save"></i> 保存
+                    <button type="button" class="btn btn-modern btn-modern-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-modern btn-modern-primary" id="savePasswordBtn">
+                        <i class="fas fa-save me-1"></i> 保存密码
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 通知组件 -->
+    <!-- 全局悬浮通知 Toast -->
     <div class="notification" id="notification">
         <div class="notification-content">
             <span class="notification-message"></span>
-            <button class="notification-close">
+            <button class="notification-close" aria-label="关闭通知">
                 <i class="fas fa-times"></i>
             </button>
         </div>
     </div>
 
-    <!-- 加载遮罩 -->
+    <!-- 全局加载遮罩 -->
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner">
-            <i class="fas fa-pencil-alt"></i>
-            <span>处理中...</span>
+            <i class="fas fa-circle-notch"></i>
+            <span>正在处理，请稍候...</span>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

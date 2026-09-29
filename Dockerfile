@@ -1,7 +1,10 @@
 # D2C - Docker to Compose
-# 使用 root 用户运行（确保 Docker socket 访问权限）
-
-FROM python:3.13-slim
+# 国内可用镜像源（支持通过 --build-arg BASE_IMAGE=... 自定义，默认使用 DaoCloud 国内加速源）
+# 备用国内源推荐：
+# - 华为云：swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.13-slim
+# - 1Panel：docker.1panel.live/library/python:3.13-slim
+ARG BASE_IMAGE=docker.m.daocloud.io/library/python:3.13-slim
+FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
@@ -11,7 +14,12 @@ ARG BUILDPLATFORM
 
 RUN echo "Building for $TARGETPLATFORM on $BUILDPLATFORM"
 
-# 安装系统依赖
+# 安装系统运行依赖
+# 优化减重策略：
+# 1. 移除 build-essential 和 gcc（所有 Python 依赖在 PyPI 均有预编译二进制 Wheel，无需编译环境，节省 ~220MB）
+# 2. 移除 docker-compose-plugin（D2C 仅通过 docker socket 转换生成 yaml，不执行 compose 运行，节省 ~60MB）
+# 3. 剥离 requirements.txt 中的 mypy/pytest/black/ruff 等测试代码质量工具（节省 ~180MB）
+# 4. 配置 Docker GPG 后自动 purge 卸载 gnupg 并合并清理层（节省 ~25MB）
 RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" > /etc/apt/sources.list \
     && echo "deb http://mirrors.aliyun.com/debian-security bookworm-security main" >> /etc/apt/sources.list \
     && echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main non-free contrib" >> /etc/apt/sources.list \
@@ -31,38 +39,24 @@ RUN echo "deb http://mirrors.aliyun.com/debian/ bookworm main non-free contrib" 
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         docker-ce-cli \
-        docker-compose-plugin \
-        build-essential \
-        gcc \
+    && apt-get purge -y --auto-remove gnupg \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# 创建必要的目录
-RUN mkdir -p /app/config /app/compose /app/logs /app/templates /app/static /app/web
-
-# 复制并安装 Python 依赖
+# 复制并安装 Python 运行时依赖
 COPY requirements.txt .
-RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-# 复制应用代码
+# 复制应用代码与入口脚本
 COPY backend/ /app/
-
-# 确保脚本可执行
-RUN chmod +x /app/*.sh /app/*.py 2>/dev/null || true
-
-# 复制入口脚本
 COPY entrypoint.sh /app/entrypoint.sh
 
-# 修复 Windows 换行符并确保脚本可执行
-RUN apt-get update && \
-    rm -rf /var/lib/apt/lists/* && \
-    sed -i 's/\r$//' /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
-
-# 清理 Python 缓存
-RUN find /app -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true && \
-    find /app -name "*.pyc" -delete 2>/dev/null || true
+# 创建必要目录、修复换行符、赋予权限并清理临时缓存（合并为单层）
+RUN mkdir -p /app/config /app/compose /app/logs /app/templates /app/static /app/web \
+    && sed -i 's/\r$//' /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh /app/*.sh /app/*.py 2>/dev/null || true \
+    && find /app -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true \
+    && find /app -name "*.pyc" -delete 2>/dev/null || true
 
 # 暴露端口
 EXPOSE 5000

@@ -1,5 +1,9 @@
 # Docker2Compose 镜像体积与构建优化报告
 
+##全新UI界面
+<img width="2650" height="2484" alt="image" src="https://github.com/user-attachments/assets/deb6070c-8ddb-442b-a12c-e6908ff8e0da" />
+
+
 ## 📌 优化背景
 
 在排查和测试 `Docker2Compose (D2C)` 容器化构建过程中，主要发现并解决了两个关键问题：
